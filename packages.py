@@ -5,7 +5,7 @@ import os
 parser = argparse.ArgumentParser(description="Checks if there are any outdated packages")
 parser.add_argument('output_file', help="Output file that shows which packages are outdated.")
 
-parser.add_argument('-r', '--repo', default="Reborn-OS", type=str, help="Specify tge repo that you want to check for updates (Default Reborn-OS)")
+parser.add_argument('-r', '--repo', default="Reborn-OS", type=str, help="Specify the repo that you want to check for updates (Default Reborn-OS)")
 parser.add_argument('-p', '--packages', default=0, help='')
 
 args = parser.parse_args()
