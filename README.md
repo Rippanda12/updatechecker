@@ -2,7 +2,8 @@
 pacman/archlinux repo update checker
 # Prerequisites:
 ```
-sudo pacman -Sy python python-pip
+sudo pacman -Sy python python-{pip,click,requests,lxml,html2text}
+yay -S python3-aur
 pip install argsparse
 ```
 # How to use:
