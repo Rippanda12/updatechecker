@@ -2,7 +2,7 @@
 pacman/archlinux repo update checker
 # Prerequisites:
 ```
-sudo pacman -Sy python python-{pip,click,requests,lxml,html2text}
+sudo pacman -Sy python python-{pip,click,requests,lxml,html2text} nano nano--syntax-highlighting nano
 yay -S python3-aur
 pip install argsparse
 ```
