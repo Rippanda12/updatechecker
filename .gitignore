@@ -1,0 +1,7 @@
+out.txt
+__pycache__/
+cf
+subprocess
+os
+os.path
+*.pyc
