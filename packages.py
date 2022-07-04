@@ -13,6 +13,7 @@ parser.add_argument('-u', '--updaterepo', default=False, help='specify whether t
 parser.add_argument('-f', '--repofolder', help='Specify where the repo folder is (Example /home/foo/foorepo/x86_64/)')
 parser.add_argument('-e', '--extension',default='.db.tar.xz', help='Specify what the repos db file extention is (Default .db.tar.xz')
 parser.add_argument('-b', '--builtfolder',default='/tmp/packages/built',help='Folder where built tarballs are put (Default /tmp/packages/built')
+parser.add_argument('--checkonly', default=True, help="")
 args = parser.parse_args()
 
 scriptpath = os.getcwd()
@@ -60,17 +61,20 @@ def compareaur(outputfile, repo, tmpfolder):
                 print("Package outdated!")
                 # Write to list if the package is outdated
                 older = older + package + " is outdated in repo aur: " + aurver + " repo: " + pacmanver + "\n"
-                answer = input("Do you want to build the package (y/n): ").lower() 
-                if answer == "yes" or answer == "y":
-                    packagesupdated.append(package)
-                    cf.main(package,"0",int("5"),"false")
-                    print("\n\n\u001b[34mPlease read the comments to see if there are issues with the package!!!")
-                    input("\u001b[34mWhen you've read them please Enter to continue...\u001b[0m\n")
-                    pullpackage(package, packagefolder)
-                elif answer == "no" or answer == "n": 
-                    continue 
-                else: 
-                    print("Please enter yes/y or no/n.")
+                if args.checkonly.lower() == "false":
+                    answer = input("Do you want to build the package (y/n): ").lower() 
+                    if answer == "yes" or answer == "y":
+                        packagesupdated.append(package)
+                        cf.main(package,"0",int("5"),"false")
+                        print("\n\n\u001b[34mPlease read the comments to see if there are issues with the package!!!")
+                        input("\u001b[34mWhen you've read them please Enter to continue...\u001b[0m\n")
+                        pullpackage(package, packagefolder)
+                    elif answer == "no" or answer == "n": 
+                        continue 
+                    else: 
+                        print("Please enter yes/y or no/n.")
+                else:
+                    print("something happened")
             elif int(compare) < int(0):
                 print("Package is newer on repo?")
                 # Write to list if the package is newer or it doesnt exist
