@@ -7,11 +7,12 @@ parser.add_argument('output_file', help="Output file that shows which packages a
 parser.add_argument('-t', '--tmpfolder', default="/tmp/packages", help="Specify in which folder pkgbuilds will be cloned into. (default: /tmp/packages)")
 parser.add_argument('-r', '--repo', default="bred", type=str, help="Specify the repo that you want to check for updates. (Default Reborn-OS)")
 parser.add_argument('-a', '--addpackages',type=str, help='Build, fetch and add packages to repo from AUR.')
-parser.add_argument('-u', '--updaterepo', default=False, help='specify whether to update repo. (True or False)')
+parser.add_argument('-R', '--removepackages',type=str, help='Remove packages from repo.')
+parser.add_argument('-u', '--updaterepo', type=bool, help='specify whether to update repo. (True or False)')
 parser.add_argument('-f', '--repofolder', help='Specify where the repo folder is. (Example /home/foo/foorepo/x86_64/)')
 parser.add_argument('-e', '--extension',default='.db.tar.xz', help='Specify what the repos db file extention is. (Default .db.tar.xz')
 parser.add_argument('-b', '--builtfolder',default='/tmp/packages/built',help='Folder where built tarballs are put (Default /tmp/packages/built')
-parser.add_argument('--checkonly', default=True, help="Specify whether to only check for outdated pakcages or check and update packages. (True or False)")
+
 parser.add_argument('-g', '--checkgit', default=False, help='specify whether to check for git updates. (True or False)')
 args = parser.parse_args()
 
@@ -56,7 +57,7 @@ def compareaur(outputfile, repo, tmpfolder, builtfolder):
                 print("Package outdated!")
                 # Write to list if the package is outdated
                 older = older + package + " is outdated in repo aur: " + aurver + " repo: " + repover + "\n"
-                if args.checkonly == "false":
+                if args.updaterepo:
                     answer = input("Do you want to build the package (y/n): ").lower() 
                     if answer == "yes" or answer == "y":
                         packagesupdated.append(package)
@@ -119,7 +120,7 @@ def checkgitpackages(outputfile, repo, tmpfolder):
                 os.system("touch " + outputfile)
                 different = different + package + " is outdated in repo aur: " + ver + " repo: " + repover + "\n"
                 out.write(package + " is different in repo aur: " + repover + " repo: " + ver + "\n")
-            if args.checkonly == "false":
+            if args.updaterepo:
                 answer = input("Do you want to build the package (y/n): ").lower() 
                 if answer == "yes" or answer == "y":
                     packagesupdated.append(package)
@@ -193,16 +194,20 @@ def repoadd(updpkg,repofolder,extension,repo,buildfolder):
     print("\n")
 
 def reporemove(updpkg,repofolder,extension,repo):
-    print("Removing repo!")
+    print("Removing packages from repo!")
     print("Changing folder to: " + repofolder)
     os.chdir(repofolder)
     print("Packages to be removed: " + ' '.join(updpkg))
     subprocess.run("repo-remove "+ repofolder + "/" + repo + extension + " " + ' '.join(updpkg), shell=True)
     print("Removing tarballs.")
-    subprocess.run("rm -vi " + ' '.join(updpkg)+ '*.pkg.tar.zst*', shell=True)
+    for package in updpkg:
+        subprocess.run("rm -vi " + repofolder + "/" + package + "*.pkg.tar.zst*", shell=True)
 
 def main():
-    if args.addpackages:
+    if args.removepackages:
+        args.removepackages = args.removepackages.split(",")
+        reporemove(args.removepackages, args.repofolder, args.extension, args.repo)
+    elif args.addpackages:
         addpackage(args.addpackages, args.builtfolder,args.tmpfolder)
         repoadd(args.addpackages, args.repofolder, args.extension, args.repo, args.builtfolder)
     else:
