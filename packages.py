@@ -5,15 +5,14 @@ import commentfetch as cf
 parser = argparse.ArgumentParser(description="Checks if there are any outdated packages")
 parser.add_argument('output_file', help="Output file that shows which packages are outdated.")
 parser.add_argument('-t', '--tmpfolder', default="/tmp/packages", help="Specify in which folder pkgbuilds will be cloned into. (default: /tmp/packages)")
-parser.add_argument('-r', '--repo', default="bred", type=str, help="Specify the repo that you want to check for updates. (Default Reborn-OS)")
+parser.add_argument('-r', '--repo', default="Reborn-OS", type=str, help="Specify the repo that you want to check for updates. (Default Reborn-OS)")
 parser.add_argument('-a', '--addpackages',type=str, help='Build, fetch and add packages to repo from AUR.')
 parser.add_argument('-R', '--removepackages',type=str, help='Remove packages from repo.')
 parser.add_argument('-u', '--updaterepo', type=bool, help='specify whether to update repo. (True or False)')
 parser.add_argument('-f', '--repofolder', help='Specify where the repo folder is. (Example /home/foo/foorepo/x86_64/)')
 parser.add_argument('-e', '--extension',default='.db.tar.xz', help='Specify what the repos db file extention is. (Default .db.tar.xz')
 parser.add_argument('-b', '--builtfolder',default='/tmp/packages/built',help='Folder where built tarballs are put (Default /tmp/packages/built')
-
-parser.add_argument('-g', '--checkgit', default=False, help='specify whether to check for git updates. (True or False)')
+parser.add_argument('-g', '--checkgit', help='specify whether to check for git updates.')
 args = parser.parse_args()
 
 scriptpath = os.getcwd()
@@ -25,9 +24,9 @@ packagesupdated = []
 def compareaur(outputfile, repo, tmpfolder, builtfolder):
     if os.path.exists(outputfile):
         os.remove(outputfile)
-    print("Updating databases")
+    print("Updating package databases!")
     subprocess.run("sudo pacman -Sy --noconfirm", shell=True)
-    print("Checking for outdated packages")
+    print("Checking for outdated packages!")
     packageslist = subprocess.check_output("pacman -Slq " + repo, shell=True).strip().decode('utf8').split('\n') # Get list of packages
     newer = ''
     older = ''
@@ -70,8 +69,6 @@ def compareaur(outputfile, repo, tmpfolder, builtfolder):
                         continue 
                     else: 
                         print("Please enter yes/y or no/n.")
-                else:
-                    print("something happened")
             elif int(compare) < int(0):
                 print("Package is newer on repo?")
                 # Write to list if the package is newer or it doesnt exist
@@ -168,12 +165,6 @@ def addpackage(pkgsadd, builtfolder,tmpfolder):
         fetchpackage(package, packagefolder)
         buildpackage(package, packagefolder, builtfolder)
 
-def removepackage(pkgsremove, builtfolder,tmpfolder):
-    pkgsremove=pkgsremove.split(",")
-    for package in pkgsremove:
-        packagefolder = tmpfolder + "/" + package
-
-
 def pushpkgbuild(package, folder):
     print("Pushing package " + package)
     os.chdir(folder)
@@ -183,6 +174,10 @@ def pushpkgbuild(package, folder):
     print("\n")
 
 def repoadd(updpkg,repofolder,extension,repo,buildfolder):
+    if extension == '.db.tar.xz':
+        files= '.files.tar.xz'
+    elif extension == '.db.tar.gz':
+        files= '.files.tar.gz'
     print("Updating repo!")
     print("Changing folder to: " + repofolder)
     os.chdir(repofolder)
@@ -194,11 +189,18 @@ def repoadd(updpkg,repofolder,extension,repo,buildfolder):
     print("\n")
 
 def reporemove(updpkg,repofolder,extension,repo):
+    if extension == '.db.tar.xz':
+        files= '.files.tar.xz'
+    elif extension == '.db.tar.gz':
+        files= '.files.tar.gz'
     print("Removing packages from repo!")
     print("Changing folder to: " + repofolder)
     os.chdir(repofolder)
     print("Packages to be removed: " + ' '.join(updpkg))
     subprocess.run("repo-remove "+ repofolder + "/" + repo + extension + " " + ' '.join(updpkg), shell=True)
+    subprocess.run("rm " + repo + ".db " + repo +".files", shell=True)
+    subprocess.run("cp -v  "+ repo + extension + " " + repo +".db", shell=True)
+    subprocess.run("cp -v  "+ repo + files + " " + repo +".files", shell=True)
     print("Removing tarballs.")
     for package in updpkg:
         subprocess.run("rm -vi " + repofolder + "/" + package + "*.pkg.tar.zst*", shell=True)
