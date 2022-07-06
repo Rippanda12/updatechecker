@@ -6,7 +6,7 @@ parser = argparse.ArgumentParser(description="Checks if there are any outdated p
 parser.add_argument('output_file', help="Output file that shows which packages are outdated.")
 parser.add_argument('-t', '--tmpfolder', default="/tmp/packages", help="Specify in which folder pkgbuilds will be cloned into. (default: /tmp/packages)")
 parser.add_argument('-r', '--repo', default="bred", type=str, help="Specify the repo that you want to check for updates. (Default Reborn-OS)")
-parser.add_argument('-a', '--addpackages', default=0, help='Build, fetch and add packages to repo from AUR.')
+parser.add_argument('-a', '--addpackages',type=str, help='Build, fetch and add packages to repo from AUR.')
 parser.add_argument('-u', '--updaterepo', default=False, help='specify whether to update repo. (True or False)')
 parser.add_argument('-f', '--repofolder', help='Specify where the repo folder is. (Example /home/foo/foorepo/x86_64/)')
 parser.add_argument('-e', '--extension',default='.db.tar.xz', help='Specify what the repos db file extention is. (Default .db.tar.xz')
@@ -21,10 +21,9 @@ pacman = "/usr/bin/pacman -Si " + args.repo + "/"
 stripver = " | grep Version | sed 's/^.*: //'"
 cmpver = "/usr/bin/vercmp"
 packagesupdated = []
-def compareaur(outputfile, repo, tmpfolder):
+def compareaur(outputfile, repo, tmpfolder, builtfolder):
     if os.path.exists(outputfile):
         os.remove(outputfile)
-
     print("Updating databases")
     subprocess.run("sudo pacman -Sy --noconfirm", shell=True)
     print("Checking for outdated packages")
@@ -65,7 +64,7 @@ def compareaur(outputfile, repo, tmpfolder):
                         print("\n\n\u001b[34mPlease read the comments to see if there are issues with the package!!!")
                         input("\u001b[34mWhen you've read them please Enter to continue...\u001b[0m\n")
                         fetchpackage(package, packagefolder) # Fetch the package from AUR
-                        buildpackage(package, packagefolder) # Build the package 
+                        buildpackage(package, packagefolder, builtfolder) # Build the package 
                     elif answer == "no" or answer == "n": 
                         continue 
                     else: 
@@ -93,7 +92,7 @@ def checkgitpackages(outputfile, repo, tmpfolder):
     if os.path.exists(outputfile):
         os.remove(outputfile)
     packageslist = subprocess.check_output("pacman -Slq " + repo, shell=True).strip().decode('utf8').split('\n')
-    packageslist = [x for x in packageslist if '-git' in x]
+    packageslist = [x for x in packageslist if '-git' in x] 
     for package in packageslist:
         package=package.strip()
         print("Package: " + package)
@@ -128,7 +127,7 @@ def checkgitpackages(outputfile, repo, tmpfolder):
                     print("\n\n\u001b[34mPlease read the comments to see if there are issues with the package!!!")
                     input("\u001b[34mWhen you've read them please Enter to continue...\u001b[0m\n")
                     fetchpackage(package, packagefolder)
-                    buildpackage(package, packagefolder)
+                    buildpackage(package, packagefolder, )
                 elif answer == "no" or answer == "n":
                     continue
             print("different" + different)
@@ -155,6 +154,24 @@ def fetchpackage(package,folder):
     print("Fetching package " + package)
     subprocess.run("git clone " + "https://aur.archlinux.org/" + package + ".git " + folder, shell=True) # Clone the package from AUR
     print("\n")
+
+def addpackage(pkgsadd, builtfolder,tmpfolder):
+    pkgsadd=pkgsadd.split(",")
+    for package in pkgsadd:
+        packagefolder = tmpfolder + "/" + package
+        print("Package: " + package)
+        packagesupdated.append(package)
+        cf.main(package,"0",int("5"),"false")
+        print("\n\n\u001b[34mPlease read the comments to see if there are issues with the package!!!")
+        input("\u001b[34mWhen you've read them please Enter to continue...\u001b[0m\n")
+        fetchpackage(package, packagefolder)
+        buildpackage(package, packagefolder, builtfolder)
+
+def removepackage(pkgsremove, builtfolder,tmpfolder):
+    pkgsremove=pkgsremove.split(",")
+    for package in pkgsremove:
+        packagefolder = tmpfolder + "/" + package
+
 
 def pushpkgbuild(package, folder):
     print("Pushing package " + package)
@@ -185,16 +202,20 @@ def reporemove(updpkg,repofolder,extension,repo):
     subprocess.run("rm -vi " + ' '.join(updpkg)+ '*.pkg.tar.zst*', shell=True)
 
 def main():
-    if args.checkgit == "True":
-        checkgitpackages(args.output_file, args.repo, args.tmpfolder)
+    if args.addpackages:
+        addpackage(args.addpackages, args.builtfolder,args.tmpfolder)
+        repoadd(args.addpackages, args.repofolder, args.extension, args.repo, args.builtfolder)
     else:
-        compareaur(args.output_file, args.repo, args.tmpfolder)
-    if args.updaterepo == "True":
-        print("Updating repo!")
-        reporemove(packagesupdated, args.repofolder, args.extension, args.repo)
-        repoadd(packagesupdated, args.repofolder, args.extension, args.repo, args.builtfolder)
-        print("Repo updated!")
-        print("\n")
+        if args.checkgit == "True":
+            checkgitpackages(args.output_file, args.repo, args.tmpfolder)
+        else:
+            compareaur(args.output_file, args.repo, args.tmpfolder, args.builtfolder)
+        if args.updaterepo == "True":
+            print("Updating repo!")
+            reporemove(packagesupdated, args.repofolder, args.extension, args.repo)
+            repoadd(packagesupdated, args.repofolder, args.extension, args.repo, args.builtfolder)
+            print("Repo updated!")
+            print("\n")
 
 if __name__ == '__main__':
     main()
