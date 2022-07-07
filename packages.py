@@ -1,5 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import argparse, os, os.path, subprocess
 
+from pyrsistent import s
 import commentfetch as cf
 
 parser = argparse.ArgumentParser(description="Checks if there are any outdated packages")
@@ -8,11 +12,11 @@ parser.add_argument('-t', '--tmpfolder', default="/tmp/packages", help="Specify 
 parser.add_argument('-r', '--repo', default="Reborn-OS", type=str, help="Specify the repo that you want to check for updates. (Default Reborn-OS)")
 parser.add_argument('-a', '--addpackages',type=str, help='Build, fetch and add packages to repo from AUR.')
 parser.add_argument('-R', '--removepackages',type=str, help='Remove packages from repo.')
-parser.add_argument('-u', '--updaterepo', type=bool, help='specify whether to update repo. (True or False)')
+parser.add_argument('-u', '--updaterepo', action='store_true', help='specify whether to update repo.' )
 parser.add_argument('-f', '--repofolder', help='Specify where the repo folder is. (Example /home/foo/foorepo/x86_64/)')
 parser.add_argument('-e', '--extension',default='.db.tar.xz', help='Specify what the repos db file extention is. (Default .db.tar.xz')
 parser.add_argument('-b', '--builtfolder',default='/tmp/packages/built',help='Folder where built tarballs are put (Default /tmp/packages/built')
-parser.add_argument('-g', '--checkgit', help='specify whether to check for git updates.')
+parser.add_argument('-g', '--checkgit',action='store_true', help='specify whether to check for git updates.')
 args = parser.parse_args()
 
 scriptpath = os.getcwd()
@@ -213,11 +217,11 @@ def main():
         addpackage(args.addpackages, args.builtfolder,args.tmpfolder)
         repoadd(args.addpackages, args.repofolder, args.extension, args.repo, args.builtfolder)
     else:
-        if args.checkgit == "True":
+        if args.checkgit:
             checkgitpackages(args.output_file, args.repo, args.tmpfolder)
         else:
             compareaur(args.output_file, args.repo, args.tmpfolder, args.builtfolder)
-        if args.updaterepo == "True":
+        if args.updaterepo:
             print("Updating repo!")
             reporemove(packagesupdated, args.repofolder, args.extension, args.repo)
             repoadd(packagesupdated, args.repofolder, args.extension, args.repo, args.builtfolder)
